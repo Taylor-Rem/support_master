@@ -1,19 +1,12 @@
-from webdriver_operations import WebdriverOperations
 from scrape import Scrape
-from config import management_portal, username, password, resident_map
+from config import username, password, resident_map
 from selenium.common.exceptions import NoSuchElementException
 
 
 class OpenTickets:
-    def __init__(self, webdriver_operations):
-        self.webdriver = webdriver_operations
-        self.scrape = Scrape()
-        self.start_program()
-
-    def start_program(self):
-        self.webdriver.driver.get(management_portal)
-        self.webdriver.driver.maximize_window()
-        self.webdriver.login(username, password)
+    def __init__(self, webdriver):
+        self.webdriver = webdriver
+        self.scrape = Scrape(webdriver)
 
     def open_ticket(self):
         self.webdriver.switch_to_primary_tab()

@@ -89,3 +89,8 @@ class WebdriverOperations:
             f"/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[1]/td/table/tbody/tr/td[3]/input[{num}]",
         )
         self.send_keys(By.NAME, "ressearch", resident + Keys.ENTER)
+
+    def close(self):
+        if self.driver:
+            self.driver.quit()
+            self.driver = None

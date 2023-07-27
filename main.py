@@ -8,6 +8,8 @@ from PyQt5.QtWidgets import (
     QLabel,
     QStackedWidget,
 )
+from config import username, password, management_portal
+from os_interact import OSInteract
 
 
 class HelperWidget(QWidget):
@@ -19,8 +21,8 @@ class HelperWidget(QWidget):
         # Create layout
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+
         self.label = QLabel(title, self)
-        self.back_btn = self.create_button("Back", self.go_back)
 
     def go_back(self):
         self.main_app.stack.setCurrentWidget(self.main_app.main_window)
@@ -33,26 +35,61 @@ class HelperWidget(QWidget):
 
 
 class TicketHelper(HelperWidget):
-    def __init__(self, main_app, open_tickets):
+    def __init__(self, main_app):
         super().__init__(main_app, "Ticket Helper")
-        self.open_tickets = open_tickets
         self.open_btn = self.create_button("Open Ticket", self.open_ticket)
+        self.back_btn = self.create_button("Back", self.go_back)
+        self.open_tickets = OpenTickets(main_app.webdriver)
 
     def open_ticket(self):
-        self.open_tickets.open_ticket()
+        if self.open_tickets:
+            self.open_tickets.open_ticket()
+
+
+class ChooseReport(HelperWidget):
+    def __init__(self, main_app):
+        super().__init__(main_app, "Choose Report")
+        self.zero_btn = self.create_button(
+            "Zero Report", lambda: self.switch_to_report("zero")
+        )
+        self.double_btn = self.create_button(
+            "Double Report", lambda: self.switch_to_report("double")
+        )
+        self.moveout_btn = self.create_button(
+            "Moveout Report", lambda: self.switch_to_report("moveout")
+        )
+        self.back_btn = self.create_button("Back", self.go_back)
+
+    def switch_to_report(self, report_type):
+        self.main_app.stack.setCurrentWidget(self.main_app.report_helper)
+        self.main_app.report_helper.set_report_type(report_type)
 
 
 class ReportHelper(HelperWidget):
-    def __init__(self, main_app):
-        super().__init__(main_app, "Report Helper")
+    def __init__(self, main_app, report_type):
+        self._report_type = report_type
+        label_text = f"{report_type.capitalize()} report"
+        super().__init__(main_app, label_text)
+        self.complete_btn = self.create_button("Complete", self.complete)
+        self.skip_btn = self.create_button("Skip", self.skip)
+        self.back_btn = self.create_button("Back", self.go_back)
+        self.report_type = report_type
+
+    def complete(self):
+        print("Complete!")
+
+    def skip(self):
+        print("Skipped!")
 
 
 class App(QWidget):
     def __init__(self):
         super().__init__()
-
         # Create stacked widget
         self.stack = QStackedWidget()
+
+        # Init WebdriverOperations
+        self.webdriver = WebdriverOperations()
 
         # Initialize UI components
         self.initUI()
@@ -62,10 +99,12 @@ class App(QWidget):
 
         self.init_main_window()
         self.init_ticket_helper()
+        self.init_choose_report()
         self.init_report_helper()
 
         self.stack.addWidget(self.main_window)
         self.stack.addWidget(self.ticket_helper)
+        self.stack.addWidget(self.choose_report)
         self.stack.addWidget(self.report_helper)
 
         self.setLayout(QVBoxLayout())
@@ -76,14 +115,17 @@ class App(QWidget):
         main_layout = QVBoxLayout()
         self.main_window.setLayout(main_layout)
         self.create_button("Ticket Helper", self.switch_to_ticket, main_layout)
-        self.create_button("Report Helper", self.switch_to_report, main_layout)
+        self.create_button("Choose Report", self.switch_to_report, main_layout)
         self.create_button("Quit App", self.close, main_layout)
 
     def init_ticket_helper(self):
-        self.ticket_helper = TicketHelper(self, None)
+        self.ticket_helper = TicketHelper(self)
+
+    def init_choose_report(self):
+        self.choose_report = ChooseReport(self)
 
     def init_report_helper(self):
-        self.report_helper = ReportHelper(self)
+        self.report_helper = ReportHelper(self, "")
 
     def create_button(self, text, callback, layout):
         button = QPushButton(text, self)
@@ -91,25 +133,19 @@ class App(QWidget):
         layout.addWidget(button)
 
     def switch_to_ticket(self):
-        # remove the old ticket helper from the stack
-        index = self.stack.indexOf(self.ticket_helper)
-        if index != -1:
-            self.stack.removeWidget(self.ticket_helper)
-
-        # initialize the new ticket helper
-        self.webdriver_operations = WebdriverOperations()
-        self.open_tickets = OpenTickets(self.webdriver_operations)
-        self.ticket_helper = TicketHelper(self, self.open_tickets)
-
-        # add the new ticket helper to the stack and switch to it
-        self.stack.addWidget(self.ticket_helper)
         self.stack.setCurrentWidget(self.ticket_helper)
+        self.open_program(management_portal)
 
     def switch_to_report(self):
-        self.stack.setCurrentWidget(self.report_helper)
+        self.stack.setCurrentWidget(self.choose_report)
+
+    def open_program(self, site):
+        self.webdriver.driver.get(site)
+        self.webdriver.login(username, password)
 
 
 if __name__ == "__main__":
+    OSInteract().create_folders()
     app = QApplication([])
     main_app = App()
     main_app.show()

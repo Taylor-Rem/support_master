@@ -1,6 +1,5 @@
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from webdriver_operations import WebdriverOperations
 
 
 class Scrape:
@@ -10,8 +9,8 @@ class Scrape:
     ticket_resident_xpath = "/html/body/div[1]/div[19]/div/main/div/div/div/div/div[2]/div/div/table/tbody/tr[12]/td[2]/a/strong"
     resident_xpath = "/html/body/table[2]/tbody/tr[4]/td/table/tbody/tr/td/table[3]/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/a"
 
-    def __init__(self):
-        self.webdriver = WebdriverOperations()
+    def __init__(self, webdriver):
+        self.webdriver = webdriver
 
     def scrape_ticket(self):
         try:
