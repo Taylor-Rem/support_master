@@ -8,8 +8,9 @@ from PyQt5.QtWidgets import (
     QLabel,
     QStackedWidget,
 )
-from config import username, password, management_portal
+from config import username, password, management_portal, resident_map
 from os_interact import OSInteract
+from filter_properties import FilterProperties
 
 
 class HelperWidget(QWidget):
@@ -50,30 +51,41 @@ class ChooseReport(HelperWidget):
     def __init__(self, main_app):
         super().__init__(main_app, "Choose Report")
         self.zero_btn = self.create_button(
-            "Zero Report", lambda: self.switch_to_report("zero")
+            "Zero Report", lambda: self.switch_to_report("zero_report")
         )
         self.double_btn = self.create_button(
-            "Double Report", lambda: self.switch_to_report("double")
+            "Double Report", lambda: self.switch_to_report("double_report")
         )
         self.moveout_btn = self.create_button(
-            "Moveout Report", lambda: self.switch_to_report("moveout")
+            "Moveout Report", lambda: self.switch_to_report("moveout_report")
         )
         self.back_btn = self.create_button("Back", self.go_back)
 
     def switch_to_report(self, report_type):
         self.main_app.stack.setCurrentWidget(self.main_app.report_helper)
         self.main_app.report_helper.set_report_type(report_type)
+        filter_properties = FilterProperties(report_type)
+        self.main_app.report_helper.retrieve_report_information(
+            filter_properties.filter_properties()
+        )
 
 
 class ReportHelper(HelperWidget):
     def __init__(self, main_app, report_type):
         self._report_type = report_type
-        label_text = f"{report_type.capitalize()} report"
+        label_text = ""
         super().__init__(main_app, label_text)
         self.complete_btn = self.create_button("Complete", self.complete)
         self.skip_btn = self.create_button("Skip", self.skip)
         self.back_btn = self.create_button("Back", self.go_back)
         self.report_type = report_type
+
+    def set_report_type(self, report_type):
+        self._report_type = report_type
+        self.label.setText(f"{report_type.replace('_', ' ')}")
+
+    def retrieve_report_information(self, properties, units, residents):
+        print(properties, units, residents)
 
     def complete(self):
         print("Complete!")
@@ -116,7 +128,7 @@ class App(QWidget):
         self.main_window.setLayout(main_layout)
         self.create_button("Ticket Helper", self.switch_to_ticket, main_layout)
         self.create_button("Choose Report", self.switch_to_report, main_layout)
-        self.create_button("Quit App", self.close, main_layout)
+        self.create_button("Quit App", self.quit_app, main_layout)
 
     def init_ticket_helper(self):
         self.ticket_helper = TicketHelper(self)
@@ -138,10 +150,15 @@ class App(QWidget):
 
     def switch_to_report(self):
         self.stack.setCurrentWidget(self.choose_report)
+        self.open_program(resident_map)
 
     def open_program(self, site):
         self.webdriver.driver.get(site)
         self.webdriver.login(username, password)
+
+    def quit_app(self):
+        self.close()
+        self.webdriver.driver.quit()
 
 
 if __name__ == "__main__":
